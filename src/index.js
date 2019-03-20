@@ -10,7 +10,7 @@ export default function (moduleOptions) {
     // Merge options:
     const options = {
         defaultOptions,
-        ...this.options.polyfill,
+        ...this.options.config,
         ...moduleOptions
     }
 }
