@@ -79,3 +79,14 @@ This is not possible. So what happens now is:
    - `config.foo` is equal to the result of `~/config/foo.js`
    - `~/config/bar.js` is continued.
    
+## What needs to be done:
+The circulair dependency warning is now:
+```
+Can not early load '~/config/foo.js' because of a circulair dependency
+```
+
+It would be nice to have a descriptive warning which tells:
+ - what is wrong
+ - how it can be fixed
+ 
+This can be achieved by implementing a dependency tree.
