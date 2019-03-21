@@ -19,5 +19,6 @@
   "bugs": {
     "url": "https://github.com/Timkor/nuxt-config/issues"
   },
-  "homepage": "https://github.com/Timkor/nuxt-config#readme"
+  "homepage": "https://github.com/Timkor/nuxt-config#readme",
+  "dependencies": {}
 }

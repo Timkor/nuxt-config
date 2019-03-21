@@ -11,6 +11,7 @@
     "generate": "nuxt generate"
   },
   "dependencies": {
+    "@nuxtjs/sentry": "^2.3.1",
     "cross-env": "^5.2.0",
     "nuxt": "^2.4.0"
   },
