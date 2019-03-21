@@ -68,3 +68,14 @@ export default (config) => {
     const foo = config.foo; // This will trigger to import ~/config/foo.js
 }
 ```
+
+This is not possible. So what happens now is:
+ - `~/config/bar.js` is executed
+   - `config.foo` is read
+   - This triggers `~/config/foo.js`
+     - `config.bar` is read
+     - Circulair dependency is detected and a warning is thrown.
+     - `foo` continues and `config.bar` is still undefined
+   - `config.foo` is equal to the result of `~/config/foo.js`
+   - `~/config/bar.js` is continued.
+   
