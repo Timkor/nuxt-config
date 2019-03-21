@@ -51,17 +51,20 @@ export default [
 There is still one problem: circulair dependencies. If you would have two config functions:
 
 `~/config/foo.js`:
+```javascript
 export default (config) => {
     
     // Read bar
     const bar = config.bar; // This will trigger to import ~/config/bar.js
 }
+```
 
 
 `~/config/bar.js`:
+```javascript
 export default (config) => {
     
     // Read foo
     const foo = config.foo; // This will trigger to import ~/config/foo.js
 }
-
+```
