@@ -2,9 +2,10 @@
 
 
 
-export default {
-    
-    quickBuild: true,
+export default ({build}) => {
+    return {
+        quickBuild: true,
 
-    sentryDSN: '...'
+        sentryDSN: '...'
+    }
 }

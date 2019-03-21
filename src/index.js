@@ -3,12 +3,40 @@ import path from 'path';
 import { listFiles } from './utils/files';
 import { mergeArray, mergeObject } from './utils/merge';
 import { typeEquals } from './utils/types';
+import { createProxyInterceptor } from './utils/proxy';
 
 const defaultOptions = {
     configDir: 'config'
 };
 
+function normalizeModuleOptions(moduleOptions) {
+    if (typeof moduleOptions === 'object') {
+        return {
+            src: moduleOptions.src,
+            options: moduleOptions.options
+        };
+    } else if (typeof moduleOptions === 'string') {
+        return {
+            src: moduleOptions,
+            options: {}
+        };
+    } else if (Array.isArray(moduleOptions)) {
+        const [src, options] = moduleOptions;
+        return {
+            src,
+            options
+        };
+    }
+
+    throw new Error('Incorrect module specification ' + moduleOptions);
+}
+
 export default async function (moduleOptions) {
+    
+    console.log(this.options.modules);
+
+    // Save a copy of the initial modules array for later:
+    const initialModules = Array.from(this.options.modules).map(normalizeModuleOptions);
 
     // Merge options:
     const options = {
@@ -19,9 +47,8 @@ export default async function (moduleOptions) {
 
     const configDir = path.resolve(this.options.srcDir, options.configDir);
 
-    
-    const files = await listFiles(configDir);
-        
+    // Get all files in the config folder:
+    const files = await listFiles(configDir);    
             
     const promises = files
                 
@@ -51,33 +78,36 @@ export default async function (moduleOptions) {
     // Await promises:
     const entries = await Promise.all(promises);
     
-    console.log(entries);
+    const optionsProxy = createProxyInterceptor(this.options, key => {
 
-    const optionsProxy = new Proxy(this.options, {
-        get(target, key) {
-            console.log('access ' + key)
-            // Early load required config:
-            const entry = entries.find(entry => entry.key === key)
+        // This function is called whenever a property is accessed from the nuxt configuration.
+
+        console.log('access ' + key)
+        
+        // Check if there is a config file for this key:
+        const entry = entries.find(entry => entry.key === key)
+        
+        if (entry) {
             
-            if (entry) {
-                loadConfig(entry);
-            }
-
-            return target[key];
+            // Early load required config:
+            loadConfig(entry);
         }
     });
 
+    // Keep track of the load stack, so that we can detect circulair dependencies:
     const loadStack = [];
+
     const loadConfig = (entry) => {
 
         if (!entry.isLoaded) {
 
             if (loadStack.includes(entry.key)) {
-                console.warn(`Can not early load ${entry.key} because of a circulair dependency`);
+                console.warn(`Can not early load '${entry.path}' because of a circulair dependency`);
                 return;
             }
 
             loadStack.push(entry.key);
+
             console.log('Load ' + entry.path);
 
             var data =  entry.exports.default;
@@ -87,14 +117,14 @@ export default async function (moduleOptions) {
             }
             
             // Apply merge strategies:
-            if (typeEquals('object', this.options[entry.key], data)) {
-                
-                this.options[entry.key] = mergeObject(this.options[entry.key], data);
-
-            } else if (typeEquals('array', this.options[entry.key], data)) {
+            if (Array.isArray(this.options[entry.key]) && Array.isArray(data)) {
                 
                 this.options[entry.key] = mergeArray(this.options[entry.key], data);
             
+            } else if (typeEquals('object', this.options[entry.key], data)) {
+                
+                this.options[entry.key] = mergeObject(this.options[entry.key], data);
+
             } else {
                 // No merge strategy, so just assign: 
                 this.options[entry.key] = data;
@@ -107,4 +137,13 @@ export default async function (moduleOptions) {
     };
 
     entries.forEach(entry => loadConfig(entry));
+
+    // Require newly added modules:
+    const mergedModules = Array.from(this.options.modules).map(normalizeModuleOptions); 
+
+    const newModules = mergedModules.filter(mergedModule => typeof initialModules.find(initialModule => initialModule.src === mergedModule.src) === 'undefined'); 
+
+    console.log(newModules);
+
+    await Promise.all(newModules.map(module => this.requireModule(module)));
 }

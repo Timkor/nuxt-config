@@ -1,5 +1,5 @@
 
 
 export default [
-    '@nuxtjs/sentry',
+    '@nuxtjs/sentry'
 ]
