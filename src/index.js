@@ -1,40 +1,17 @@
 import path from 'path';
 
 import { listFiles } from './utils/files';
+import { normalizeModuleOptions } from './utils/module';
+import { createProxyInterceptor } from './utils/proxy';
 import { mergeArray, mergeObject } from './utils/merge';
 import { typeEquals } from './utils/types';
-import { createProxyInterceptor } from './utils/proxy';
 
 const defaultOptions = {
     configDir: 'config'
 };
 
-function normalizeModuleOptions(moduleOptions) {
-    if (typeof moduleOptions === 'object') {
-        return {
-            src: moduleOptions.src,
-            options: moduleOptions.options
-        };
-    } else if (typeof moduleOptions === 'string') {
-        return {
-            src: moduleOptions,
-            options: {}
-        };
-    } else if (Array.isArray(moduleOptions)) {
-        const [src, options] = moduleOptions;
-        return {
-            src,
-            options
-        };
-    }
-
-    throw new Error('Incorrect module specification ' + moduleOptions);
-}
-
 export default async function (moduleOptions) {
     
-    console.log(this.options.modules);
-
     // Save a copy of the initial modules array for later:
     const initialModules = Array.from(this.options.modules).map(normalizeModuleOptions);
 
@@ -82,7 +59,6 @@ export default async function (moduleOptions) {
 
         // This function is called whenever a property is accessed from the nuxt configuration.
 
-        console.log('access ' + key)
         
         // Check if there is a config file for this key:
         const entry = entries.find(entry => entry.key === key)
@@ -106,9 +82,8 @@ export default async function (moduleOptions) {
                 return;
             }
 
+            // Keep track of callstack of load:
             loadStack.push(entry.key);
-
-            console.log('Load ' + entry.path);
 
             var data =  entry.exports.default;
 
@@ -132,6 +107,7 @@ export default async function (moduleOptions) {
 
             entry.isLoaded = true;
 
+            // Keep track of callstack of load:
             loadStack.pop();
         }
     };
@@ -142,8 +118,6 @@ export default async function (moduleOptions) {
     const mergedModules = Array.from(this.options.modules).map(normalizeModuleOptions); 
 
     const newModules = mergedModules.filter(mergedModule => typeof initialModules.find(initialModule => initialModule.src === mergedModule.src) === 'undefined'); 
-
-    console.log(newModules);
-
+    
     await Promise.all(newModules.map(module => this.requireModule(module)));
 }
