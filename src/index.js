@@ -1,23 +1,12 @@
 import path from 'path';
 
 import { listFiles } from './utils/files';
-import { mergeOptions } from './utils/merge';
+import { mergeArray, mergeObject } from './utils/merge';
+import { typeEquals } from './utils/types';
 
 const defaultOptions = {
     configDir: 'config'
 };
-
-function mergeObject(...objects) {
-    return Object.assign({}, ...objects);
-}
-
-function mergeArray(...arrays) {
-    return [].concat.apply([], arrays);
-}
-
-function typeEquals(type, ...objects) {
-    return objects.every(object => typeof object === type);
-}
 
 export default async function (moduleOptions) {
 
